@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { OutbreakGeoJSON, OutbreakGeoFeature, LayerVisibility } from '@/types';
 
 // 声明高德地图全局类型
 declare global {
@@ -9,33 +10,9 @@ declare global {
     }
 }
 
-// 类型定义
-interface OutbreakGeoFeature {
-    geometry: {
-        coordinates: [number, number];
-        type: string;
-    };
-    properties: {
-        severity: string;
-        case_count: number;
-        disease_name: string;
-        country: string;
-        severity_score?: number;
-        name?: string;
-    };
-}
-
-interface OutbreakGeoJSON {
-    features: OutbreakGeoFeature[];
-}
-
 interface PulseMapProps {
     data: OutbreakGeoJSON;
-    layers: {
-        heatmap: boolean;
-        hotspots: boolean;
-        spread: boolean;
-    };
+    layers: LayerVisibility;
     onFeatureClick: (feature: OutbreakGeoFeature) => void;
     flyTo?: [number, number] | null;
 }

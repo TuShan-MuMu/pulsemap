@@ -29,7 +29,7 @@ export async function fetchOutbreakGeoJSON(): Promise<OutbreakGeoJSON> {
     return { type: "FeatureCollection", features: [] };
   }
 
-  const features: OutbreakGeoFeature[] = (data || []).map((loc) => {
+  const features: OutbreakGeoFeature[] = (data || []).map((loc: any) => {
     const outbreak = loc.outbreaks as unknown as {
       id: string;
       disease_name: string;
@@ -89,7 +89,7 @@ export async function fetchFeedItems(): Promise<FeedItem[]> {
     return [];
   }
 
-  return (data || []).map((report) => {
+  return (data || []).map((report: any) => {
     const outbreak = report.outbreaks as unknown as {
       disease_name: string;
       severity: Severity;

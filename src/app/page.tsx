@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
-import PulseMap from '@/components/PulseMap';
 import LayerControls from '@/components/LayerControls';
 import Legend from '@/components/Legend';
 import OutbreakDetail from '@/components/OutbreakDetail';
@@ -14,7 +14,17 @@ import { seedOutbreaks, seedFeedItems } from '@/lib/seed-data';
 import { loadDashboardData, DataSource } from '@/lib/api-client';
 import { OutbreakGeoJSON, OutbreakGeoFeature, LayerVisibility } from '@/types';
 
-export default function Home() {
+// 动态导入 PulseMap，禁用 SSR
+const PulseMap = dynamic(() => import('@/components/PulseMap'), {
+    ssr: false,
+    loading: () => (
+        <div className="w-full h-full flex items-center justify-center bg-gray-900">
+            <div className="text-gray-400">加载地图中...</div>
+        </div>
+    ),
+});
+
+function HomeContent() {
     const [layers, setLayers] = useState<LayerVisibility>({
         heatmap: true,
         hotspots: true,
@@ -84,6 +94,7 @@ export default function Home() {
     const handleSearch = useCallback((query: string) => {
         setSearchQuery(query);
     }, []);
+
     return (
         <div className="flex flex-col h-screen">
             <Navbar onSearch={handleSearch} />
@@ -106,4 +117,8 @@ export default function Home() {
             </div>
         </div>
     );
+}
+
+export default function Home() {
+    return <HomeContent />;
 }

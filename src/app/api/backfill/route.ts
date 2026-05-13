@@ -3,7 +3,6 @@ import { processReports } from "@/lib/pipeline/dedup";
 import { fetchWHOByDateRange } from "@/lib/pipeline/who-parser";
 import { RawOutbreakReport } from "@/lib/pipeline/types";
 import { validatePipelineAuth, sanitizeErrorMessage } from "@/lib/pipeline/auth";
-import { safeJsonResponse } from "@/lib/pipeline/validate";
 
 export const maxDuration = 120; // Backfill may process larger batches
 export const dynamic = "force-dynamic";
@@ -23,23 +22,18 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-    const parsed = await safeJsonResponse<Record<string, unknown>>(request, "backfill request");
-    if (!parsed.ok) {
-      return NextResponse.json(
-        { error: "Request body must be valid JSON" },
-        { status: 400 }
-      );
-    }
-    const body = parsed.data;
-    const { startDate, endDate, limit = 200 } = body as {
+    // 直接解析请求体 JSON，绕过 safeJsonResponse 的类型问题
+    const body = await request.json() as {
       startDate?: string;
       endDate?: string;
       limit?: number;
       source?: string;
     };
+    
+    const { startDate, endDate, limit = 200 } = body;
 
     // Validate source against allowlist — never reflect raw user input
-    const source = ALLOWED_SOURCES.has(body.source) ? body.source : null;
+    const source = ALLOWED_SOURCES.has(body.source || "") ? body.source : null;
     if (body.source && !source) {
       return NextResponse.json(
         { error: "Unsupported source. Available: who, all" },
@@ -102,6 +96,19 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     console.error("[Backfill] Error:", error);
+
+    // 如果 JSON 解析失败，返回友好错误
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        {
+          success: false,
+          duration: `${duration}s`,
+          error: "Request body must be valid JSON",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json(
       {
